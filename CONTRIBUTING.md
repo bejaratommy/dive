@@ -11,8 +11,10 @@ Thank you for your interest in contributing to dive! This document covers how to
 ## Getting the source
 
 ```bash
-git clone https://github.com/wagoodman/dive.git
+# Fork the repo on GitHub first, then:
+git clone https://github.com/<your-username>/dive.git
 cd dive
+git remote add upstream https://github.com/wagoodman/dive.git
 ```
 
 ## Bootstrapping
@@ -23,8 +25,6 @@ Bootstrap everything in one step:
 
 ```bash
 make tools
-# or equivalently:
-make bootstrap
 ```
 
 From this point you can use either `make <target>` or `.tool/task <target>` interchangeably.
@@ -35,7 +35,7 @@ From this point you can use either `make <target>` or `.tool/task <target>` inte
 make build
 ```
 
-This produces a local snapshot binary via [goreleaser](https://goreleaser.com). The binary ends up under `./snapshot/`.
+This produces a local snapshot binary via [goreleaser](https://goreleaser.com). The binary ends up under `./snapshot/`. goreleaser is installed automatically by `make tools` via binny — no global install needed.
 
 For a quick dev build without goreleaser:
 
@@ -75,14 +75,18 @@ Before submitting a PR, make sure `make` (the default target) passes cleanly.
 
 ```
 cmd/          Entry points (CLI wiring via cobra)
+  dive/       Main package (binary entry point)
 dive/         Core library: image analysis, file-tree diffing
   filetree/   File-tree data structures and operations
   image/      Image fetch/parsing for Docker and Podman
 internal/     Internal utilities
-runtime/      TUI, CI mode, export, and test-CLI
-  ci/         CI pass/fail evaluation logic
-  export/     JSON export
-  ui/         Terminal UI (gocui-based)
+  bus/        Event bus
+  log/        Logging
+  utils/      Shared utility helpers
+go.mod        Module definition and minimum Go version
+.goreleaser.yaml  Release build configuration
+.golangci.yaml    Linter configuration
+.github/      CI workflows
 ```
 
 ## Submitting changes
