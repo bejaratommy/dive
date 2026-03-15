@@ -4,7 +4,7 @@ Thank you for your interest in contributing to dive! This document covers how to
 
 ## Prerequisites
 
-- [Go](https://go.dev/dl/) 1.21 or later
+- [Go](https://go.dev/dl/) 1.24 or later
 - [Docker](https://docs.docker.com/get-docker/) (required for integration/CLI tests)
 - `make` or `task` (see [Bootstrapping](#bootstrapping) below)
 
@@ -40,7 +40,7 @@ This produces a local snapshot binary via [goreleaser](https://goreleaser.com). 
 For a quick dev build without goreleaser:
 
 ```bash
-go build -o dive .
+go build -o dive ./cmd/dive
 ```
 
 ## Running the tests
@@ -100,4 +100,4 @@ runtime/      TUI, CI mode, export, and test-CLI
 
 ## License
 
-By contributing you agree that your changes will be licensed under the [Apache 2.0 License](LICENSE).
+By contributing you agree that your changes will be licensed under the [MIT License](LICENSE).
