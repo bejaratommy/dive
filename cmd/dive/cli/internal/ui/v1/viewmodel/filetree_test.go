@@ -399,6 +399,42 @@ func TestFileTreeHideTypeWithFilter(t *testing.T) {
 	runTestCase(t, vm, width, height, regex)
 }
 
+func TestFileTreeCursorClampedAfterHideDiffType(t *testing.T) {
+	vm := initializeTestViewModel(t)
+
+	width, height := 100, 100
+	vm.Setup(0, height)
+	vm.ShowAttributes = true
+
+	// aggregate several layers so the full tree contains many unmodified files
+	err := vm.SetTreeByLayer(0, 0, 1, 7)
+	checkError(t, err, "unable to SetTreeByLayer")
+
+	err = vm.Update(nil, width, height)
+	checkError(t, err, "unable to update")
+
+	// move the cursor to the bottom of the full tree
+	for vm.CursorDown() {
+	}
+
+	oldIndex := vm.TreeIndex
+
+	// hiding unmodified files shrinks the tree, leaving the cursor below the last visible line
+	vm.ToggleShowDiffType(filetree.Unmodified)
+	err = vm.Update(nil, width, height)
+	checkError(t, err, "unable to update after hiding unmodified")
+
+	require.Greater(t, oldIndex, vm.ModelTree.VisibleSize(),
+		"precondition: the cursor must have been below the shrunken tree")
+
+	// the cursor must be clamped back onto a real, visible node so the highlight stays visible
+	require.NotNil(t, vm.CurrentNode(nil), "cursor should resolve to a visible node after hiding a diff type")
+	assert.LessOrEqual(t, vm.TreeIndex, vm.ModelTree.VisibleSize()-1, "cursor should not be below the last visible line")
+	assert.Equal(t, vm.TreeIndex-vm.bufferIndexLowerBound, vm.bufferIndex, "buffer index should track the cursor position within the window")
+	assert.GreaterOrEqual(t, vm.bufferIndex, 0, "buffer index should be non-negative")
+	assert.LessOrEqual(t, vm.bufferIndex, vm.height(), "highlighted line should be within the rendered window")
+}
+
 func repoPath(t testing.TB, path string) string {
 	t.Helper()
 	root := repoRoot(t)

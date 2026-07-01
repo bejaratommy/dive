@@ -445,7 +445,40 @@ func (vm *FileTreeViewModel) Update(filterRegex *regexp.Regexp, width, height in
 		return fmt.Errorf("unable to propagate vm view tree: %w", err)
 	}
 
+	vm.clampCursor()
+
 	return nil
+}
+
+// clampCursor keeps the cursor and the visible window within the bounds of the
+// currently visible tree. Hiding a diff type (or applying a filter) can shrink
+// the tree so that the previous cursor position now falls below the last visible
+// line, which would otherwise make the selection highlight disappear.
+func (vm *FileTreeViewModel) clampCursor() {
+	lastVisibleIndex := vm.ModelTree.VisibleSize() - 1
+	if lastVisibleIndex < 0 {
+		lastVisibleIndex = 0
+	}
+
+	if vm.TreeIndex <= lastVisibleIndex &&
+		vm.TreeIndex >= vm.bufferIndexLowerBound &&
+		vm.TreeIndex <= vm.bufferIndexUpperBound() {
+		return
+	}
+
+	if vm.TreeIndex > lastVisibleIndex {
+		vm.TreeIndex = lastVisibleIndex
+	}
+	if vm.TreeIndex < vm.bufferIndexLowerBound {
+		vm.bufferIndexLowerBound = vm.TreeIndex
+	}
+	if vm.TreeIndex > vm.bufferIndexUpperBound() {
+		vm.bufferIndexLowerBound = vm.TreeIndex - vm.height()
+		if vm.bufferIndexLowerBound < 0 {
+			vm.bufferIndexLowerBound = 0
+		}
+	}
+	vm.bufferIndex = vm.TreeIndex - vm.bufferIndexLowerBound
 }
 
 // Render flushes the state objects (file tree) to the pane.
