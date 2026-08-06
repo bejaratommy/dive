@@ -48,9 +48,9 @@ type ResultTally struct {
 }
 
 type ReferenceFile struct {
-	References int    `json:"count"`
-	SizeBytes  uint64 `json:"sizeBytes"`
-	Path       string `json:"file"`
+	References  int    `json:"count"`
+	WastedBytes uint64 `json:"wastedBytes"`
+	Path        string `json:"file"`
 }
 
 func NewEvaluator(rules []Rule) Evaluator {
@@ -97,9 +97,9 @@ func (e Evaluator) Evaluate(ctx context.Context, analysis *image.Analysis) Evalu
 		fileData := analysis.Inefficiencies[len(analysis.Inefficiencies)-1-idx]
 
 		e.InefficientFiles = append(e.InefficientFiles, ReferenceFile{
-			References: len(fileData.Nodes),
-			SizeBytes:  uint64(fileData.CumulativeSize),
-			Path:       fileData.Path,
+			References:  len(fileData.Nodes),
+			WastedBytes: uint64(fileData.WastedSize),
+			Path:        fileData.Path,
 		})
 	}
 
@@ -200,7 +200,7 @@ func (e Evaluator) renderInefficientFilesSection(analysis *image.Analysis) strin
 	for _, file := range e.InefficientFiles {
 		row := fmt.Sprintf("  %-5s  %-12s  %-s",
 			strconv.Itoa(file.References),
-			humanize.Bytes(file.SizeBytes),
+			humanize.Bytes(file.WastedBytes),
 			file.Path,
 		)
 		rows = append(rows, row)
