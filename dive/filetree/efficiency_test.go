@@ -32,7 +32,7 @@ func TestEfficiency(t *testing.T) {
 
 	var expectedScore = 0.75
 	var expectedMatches = EfficiencySlice{
-		&EfficiencyData{Path: "/etc/nginx/nginx.conf", CumulativeSize: 7000},
+		&EfficiencyData{Path: "/etc/nginx/nginx.conf", CumulativeSize: 7000, WastedSize: 5000},
 	}
 	actualScore, actualMatches := Efficiency(trees)
 
@@ -53,6 +53,71 @@ func TestEfficiency(t *testing.T) {
 
 	if expectedMatches[0].CumulativeSize != actualMatches[0].CumulativeSize {
 		t.Errorf("Expected cumulative size of %v but go %v", expectedMatches[0].CumulativeSize, actualMatches[0].CumulativeSize)
+	}
+
+	if expectedMatches[0].WastedSize != actualMatches[0].WastedSize {
+		t.Errorf("Expected wasted size of %v but go %v", expectedMatches[0].WastedSize, actualMatches[0].WastedSize)
+	}
+}
+
+// TestEfficiency_WastedSize covers the reclaimable bytes reported for a path,
+// which is every copy of that path but one. A path that only ever appears once
+// wastes nothing, even though it does contribute to the cumulative size.
+func TestEfficiency_WastedSize(t *testing.T) {
+	tests := []struct {
+		name               string
+		layers             [][]string
+		size               int64
+		path               string
+		expectedWastedSize int64
+	}{
+		{
+			name:               "single copy wastes nothing",
+			layers:             [][]string{{"/usr/bin/app"}},
+			size:               1000,
+			path:               "/usr/bin/app",
+			expectedWastedSize: 0,
+		},
+		{
+			name:               "two copies waste one",
+			layers:             [][]string{{"/usr/bin/app"}, {"/usr/bin/app"}},
+			size:               1000,
+			path:               "/usr/bin/app",
+			expectedWastedSize: 1000,
+		},
+		{
+			name:               "four copies waste three",
+			layers:             [][]string{{"/usr/bin/app"}, {"/usr/bin/app"}, {"/usr/bin/app"}, {"/usr/bin/app"}},
+			size:               1000,
+			path:               "/usr/bin/app",
+			expectedWastedSize: 3000,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			trees := make([]*FileTree, len(test.layers))
+			for idx, paths := range test.layers {
+				trees[idx] = NewFileTree()
+				for _, path := range paths {
+					_, _, err := trees[idx].AddPath(path, FileInfo{Size: test.size})
+					checkError(t, err, "could not setup test")
+				}
+			}
+
+			_, matches := Efficiency(trees)
+
+			var actualWastedSize int64
+			for _, match := range matches {
+				if match.Path == test.path {
+					actualWastedSize = match.WastedSize
+				}
+			}
+
+			if actualWastedSize != test.expectedWastedSize {
+				t.Errorf("Expected wasted size of %v but go %v", test.expectedWastedSize, actualWastedSize)
+			}
+		})
 	}
 }
 

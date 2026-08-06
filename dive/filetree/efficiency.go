@@ -8,9 +8,14 @@ import (
 
 // EfficiencyData represents the storage and reference statistics for a given file tree path.
 type EfficiencyData struct {
-	Path              string
-	Nodes             []*FileNode
-	CumulativeSize    int64
+	Path           string
+	Nodes          []*FileNode
+	CumulativeSize int64
+	// WastedSize is the portion of CumulativeSize that could be reclaimed by
+	// only keeping the smallest copy of this path, that is, every copy but
+	// one. For a path that was removed by a whiteout this is the full size of
+	// the original file, since none of those bytes ends up in the final image.
+	WastedSize        int64
 	minDiscoveredSize int64
 }
 
@@ -115,6 +120,7 @@ func Efficiency(trees []*FileTree) (float64, EfficiencySlice) {
 	var discoveredPathSizes int64
 
 	for _, value := range efficiencyMap {
+		value.WastedSize = value.CumulativeSize - value.minDiscoveredSize
 		minimumPathSizes += value.minDiscoveredSize
 		discoveredPathSizes += value.CumulativeSize
 	}
